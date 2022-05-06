@@ -1,3 +1,4 @@
+from email import message
 import socket
 import threading
 from Member import Member
@@ -80,18 +81,7 @@ class ServerMMS:
         elif(messageList[0] == "list"):
             self.message(client, self.getServerList()) 
             client.close()
-        elif(messageList[0] == "audioroom"):
-            roomId, nickname, udpPort = self.getIdAndNicknameAndUDPPort(messageList[1])
 
-            newMember =  Member(client, nickname, roomId, address, udpPort=int(udpPort))
-            self.addNewUser(newMember, isAudioRoom=True)
-
-            self.message(newMember.client, str(self.serverList[newMember.serverId].portNum))
-
-            # From Here On The Room Object Handles Audio Transmission And The App Messages
-            self.handle_messages(newMember)
-
-            
 
     # Receiving / Listening Function
     def listen(self):
@@ -107,11 +97,11 @@ class ServerMMS:
             
 
 
-    def addNewUser(self, newMember: Member, isAudioRoom=False): # Bug: What if a join is done on an audioroom?
+    def addNewUser(self, newMember: Member):
         if(newMember.serverId not in self.serverList):
-             self.serverList[newMember.serverId] = Room(newMember, isAudioRoom)
-        else:
-            self.serverList[newMember.serverId].addMember(newMember)
+             self.serverList[newMember.serverId] = Room()
+
+        self.serverList[newMember.serverId].addMember(newMember)
 
         # Print And Broadcast Nickname
         print(f"{newMember.nick} joined room '{newMember.serverId}'")
@@ -122,10 +112,6 @@ class ServerMMS:
     def getIdAndNickname(self, message: str):
         splitMsg = message.split(" ", 1)
         return splitMsg[0], splitMsg[1]
-
-    def getIdAndNicknameAndUDPPort(self, message: str):
-        splitMsg = message.split(" ", 2)
-        return splitMsg[0], splitMsg[1], splitMsg[2]
 
     def getServerList(self):
 
@@ -150,4 +136,3 @@ class ServerMMS:
                 print(userInput)
             except:
                 exit()
-

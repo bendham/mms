@@ -67,6 +67,7 @@ class Client:
 	def get_audio_from_server_and_play(self):
 		if(self.hasSpeaker):
 			self.stream_play_back.start_stream()
+			print("Port and Ip", ip, self.UDP_PORT)
 			while self.isConnected:
 				frame = self.UDP_voice_socket.recv(self.BUFF_SIZE)
 				self.stream_play_back.write(frame)
@@ -91,6 +92,7 @@ class Client:
 			# Receive Message From Server
 			message = self.client.recv(1024).decode('ascii')
 			self.UDP_PORT = int(message)
+			self.disp_chat(f"\n---- In Room {self.roomId} ----\n")
 
 			# Binds UDP Socket
 			# self.UDP_voice_socket.sendto("Hi".encode('ascii'), (ip, self.UDP_PORT))
@@ -126,7 +128,6 @@ class Client:
 			self.UDP_voice_socket.bind(('', self.find_free_port()))
 
 			if(type=="room"):
-				self.disp_chat(f"\n---- In Room {self.roomId} ----\n")
 
 				# Starting Threads For Receiving
 				receive_thread = threading.Thread(target=self.receive)
@@ -175,6 +176,9 @@ class Client:
 
 	# Listening to Server and Sending Nickname
 	def receive(self):
+
+		self.disp_chat(f"\n---- In Room {self.roomId} ----\n")
+
 		while self.isConnected:
 
 			try:
@@ -295,8 +299,6 @@ class Client:
 		self.disp(f"Current Set Room: {self.roomId}")
 		self.disp(f"Use !help for commands")
 		
-
-
 	def help(self, cmd_dict):
 		msg = ""
 		for key, value in cmd_dict.items():
