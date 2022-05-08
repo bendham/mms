@@ -67,7 +67,6 @@ class Client:
 	def get_audio_from_server_and_play(self):
 		if(self.hasSpeaker):
 			self.stream_play_back.start_stream()
-			print("Port and Ip", ip, self.UDP_PORT)
 			while self.isConnected:
 				frame = self.UDP_voice_socket.recv(self.BUFF_SIZE)
 				self.stream_play_back.write(frame)
@@ -92,7 +91,6 @@ class Client:
 			# Receive Message From Server
 			message = self.client.recv(1024).decode('ascii')
 			self.UDP_PORT = int(message)
-			self.disp_chat(f"\n---- In Room {self.roomId} ----\n")
 
 			# Binds UDP Socket
 			# self.UDP_voice_socket.sendto("Hi".encode('ascii'), (ip, self.UDP_PORT))
@@ -107,7 +105,6 @@ class Client:
 			play_audio_thread.start()
 
 			self.needsAudioSetup = False
-			self.disp("Connected!")
 		except:
 			# Close Connection When Error
 			self.setDisconnectState()
@@ -116,8 +113,6 @@ class Client:
 	def connect(self, type="room"):
 
 		if(not self.isConnected):
-			self.isConnected = True
-
 			# Connecting To Server
 			self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.client.connect((ip, port))
@@ -129,13 +124,23 @@ class Client:
 
 			if(type=="room"):
 
-				# Starting Threads For Receiving
-				receive_thread = threading.Thread(target=self.receive)
-				receive_thread.start()
 
 				message = f"{type} {self.roomId} {self.nickname}"
-
 				self.client.send(message.encode('ascii'))
+
+				connect_message_array = self.client.recv(1024).decode('ascii').split(" ", 1)
+				connect_message = connect_message_array[0]
+				room_name = connect_message_array[1]
+
+				if(connect_message == "connected"):
+					self.isConnected = True
+					self.disp("Connected!")
+					self.disp_chat(f"\n---- In Room {room_name} ----\n")
+					# Starting Threads For Receiving
+					receive_thread = threading.Thread(target=self.receive)
+					receive_thread.start()
+				else:
+					self.disp("Could not connect to server.")
 			elif(type=="list"):
 				
 				 # Starting Threads For Receiving
@@ -148,8 +153,23 @@ class Client:
 				
 				message = f"{type} {self.roomId} {self.nickname} {self.UDP_voice_socket.getsockname()[1]}"
 				self.client.send(message.encode('ascii'))
+				connect_message_array = self.client.recv(1024).decode('ascii').split(" ", 1)
+				connect_message = connect_message_array[0]
+				room_name = connect_message_array[1]
+				if(connect_message == "connected"):
+					self.isConnected = True
+					self.disp("Connected!")
+					self.disp_chat(f"\n---- In Room {room_name} ----\n")
 
-				self.send_and_receive_audio()
+
+					self.send_and_receive_audio()
+
+					# Starting Threads For Receiving
+					receive_thread = threading.Thread(target=self.receive)
+					receive_thread.start()
+				else:
+					self.disp("Could not connect to server.")
+				
 		else:
 			self.disp("Already connected bruv chill!")
 
@@ -176,8 +196,6 @@ class Client:
 
 	# Listening to Server and Sending Nickname
 	def receive(self):
-
-		self.disp_chat(f"\n---- In Room {self.roomId} ----\n")
 
 		while self.isConnected:
 
@@ -250,7 +268,7 @@ class Client:
 					
 					self.isConnected = False
 
-					self.disp("Bye, byte!")
+					self.disp("Bye, bye!")
 					exit()
 				elif(cmd == "!name"):
 					if(len(cmdList) == 1):

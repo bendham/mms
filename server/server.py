@@ -33,7 +33,7 @@ class ServerMMS:
     def broadcast(self,member: Member, message):
         self.serverList[member.serverId].broadcast_to_room(member.nick, message)
 
-    def message(self, client, message):
+    def message(self, client, message:str):
         client.send(message.encode('ascii'))
 
     # Handling Messages From Clients
@@ -48,7 +48,6 @@ class ServerMMS:
                 elif(message == "!list"):
                     self.message(member.client, self.getServerList())
                 else:
-
                     self.broadcast(member, message)
             except:
                 # Print And Broadcast Nickname
@@ -88,13 +87,10 @@ class ServerMMS:
 
             newMember =  Member(client, nickname, roomId, address, udpPort=int(udpPort))
             self.addNewUser(newMember, isAudioRoom=True)
-
             self.message(newMember.client, str(self.serverList[newMember.serverId].portNum))
 
             # From Here On The Room Object Handles Audio Transmission And The App Messages
             self.handle_messages(newMember)
-
-            
 
     # Receiving / Listening Function
     def listen(self):
@@ -115,6 +111,8 @@ class ServerMMS:
              self.serverList[newMember.serverId] = Room(newMember, isAudioRoom)
         else:
             self.serverList[newMember.serverId].addMember(newMember)
+
+        self.message(newMember.client, f"connected {newMember.serverId}")
 
         # Print And Broadcast Nickname
         print(f"{newMember.nick} joined room '{newMember.serverId}'")
