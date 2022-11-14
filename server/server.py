@@ -133,8 +133,10 @@ class ServerMMS:
         if(len(self.serverList) > 0):
             sList = "Room List:"
 
-            for key, value in self.serverList.items():
-                sList += f"\n{key} -> {value.roomcount} users"
+            for key, room in self.serverList.items():
+                roomType = "AudioRoom" if room.isAudioRoom else "TextRoom"
+
+                sList += f"\n{key} | {roomType} -> {room.roomcount} users"
             
             return sList
         else:

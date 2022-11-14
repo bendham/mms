@@ -3,6 +3,7 @@ import threading
 from pyaudio import PyAudio, paInt16, paInt32
 from config import ip, port
 import configparser
+import sounddevice as sd
 
 
 class Client:
@@ -24,9 +25,10 @@ class Client:
 		self.roomId = self.config['client-details']['room_id']
 
 		self.welcome()
+		self.setup_default_input_output()
 
 		self.commandsBaisc = {"!help":"Lists these words", "!roomhelp":"Lists the commands only aplicable to a room", "!room":"lists the current room","!room newRoom":"Set the room you want to connect to. e.g. !room coolRoom","!list": "displays current rooms" , "!name":"prints your current nickname","!name newName":"set's your nickname",
-						"!join": "connects you to the setroom. Can also do e.g. !join aRoomOfMyChoice", "!room":"lists the current room", "!leave":"leaves the current room", "!quit": "Quits Matthew's Messaging Service", "!joinaudio" : "joins the audio room", "!mute" : "toggles your mute state"}
+						"!join": "connects you to the setroom. Can also do e.g. !join aRoomOfMyChoice", "!room":"lists the current room", "!leave":"leaves the current room", "!quit": "Quits Matthew's Messaging Service", "!joinaudio" : "joins the audio room", "!mute" : "toggles your mute state", "!pickmic":"choose your microphone", "!pickspeak": "choose your speaker"}
 
 		self.commandsRoomCommands = { "!helproom":"Lists these words", "!members": "lists the current members in the room", "!count": "gives you the number of members for the current room", "!created": "when the room was created", "!whisper": "send direct message to member in room. e.g. !whisper freddy HI THERE", "!stats": "gives you the full shabang of stats!"}
 
@@ -39,12 +41,20 @@ class Client:
 		self.isMuted = False
 		self.needsAudioSetup = True
 
+	def setup_default_input_output(self):
+		idList = sd.default.device
+
+		self.input_device_idx = idList[0]
+		self.output_device_idx = idList[1]
+
+
 	def setup_mic_stream(self):
 		self.pyAudio_mic = PyAudio()
 		self.stream_input = self.pyAudio_mic.open(format=self.FORMAT_BYTES_PER_SAMPLE,
 						channels=self.CHANNELS,
 						rate=self.RATE,
 						input=True,
+						input_device_index=self.input_device_idx,
 						frames_per_buffer=self.CHUNK_FRAME)
 
 	def setup_speaker_stream(self):
@@ -53,6 +63,7 @@ class Client:
 					channels=self.CHANNELS,
 					rate=self.RATE,
 					output=True,
+					output_device_index=self.output_device_idx,
 					frames_per_buffer=self.CHUNK_FRAME)
 
 	def get_audio_from_mic_and_send(self):
@@ -108,7 +119,27 @@ class Client:
 		except:
 			# Close Connection When Error
 			self.setDisconnectState()
+	
+	def list_audio_devices(self, deviceType):
+		devices = sd.query_devices()
+
+		if(isinstance(devices, dict) ):
+			if(deviceType in devices["name"]):
+					self.disp(f"{devices['hostapi']} {devices['name']}")
+		else:
+			idx = 0
+			for device in devices:
+				if(deviceType in device["name"]):
+					current_sysmbol = ""
+					if(idx == self.input_device_idx or idx == self.output_device_idx):
+						current_sysmbol = "*"
+
+					self.disp(f"{current_sysmbol} {idx} {device['name']}")
+				idx += 1
 			
+
+		
+		
 
 	def connect(self, type="room"):
 
@@ -295,6 +326,28 @@ class Client:
 						self.disp("Muted!")
 					else:
 						self.disp("Unmuted!")
+				elif(cmd == "!pickmic"):
+					if(len(cmdList) == 1):
+						self.list_audio_devices("Microphone")
+					elif len(cmdList) == 2:
+						if(cmdList[1].isdigit()):
+							self.input_device_idx = int(cmdList[1])
+							self.disp("Chosen microphone updated")
+						else:
+							self.disp("Please enter an integer")
+					else:
+						command_good = False
+				elif(cmd == "!pickspeak"):
+					if(len(cmdList) == 1):
+						self.list_audio_devices("Speakers")
+					elif len(cmdList) == 2:
+						if(cmdList[1].isdigit()):
+							self.output_device_idx = int(cmdList[1])
+							self.disp("Chosen speakers updated")
+						else:
+							self.disp("Please enter an integer")
+					else:
+						command_good = False
 				else:
 					command_good = False
 
